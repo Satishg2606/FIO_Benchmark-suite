@@ -1,0 +1,22 @@
+randread: (g=0): rw=randread, bs=(R) 128KiB-128KiB, (W) 128KiB-128KiB, (T) 128KiB-128KiB, ioengine=libaio, iodepth=128
+...
+fio-3.19
+Starting 64 processes
+
+fio: terminating on signal 2
+
+randread: (groupid=0, jobs=64): err= 0: pid=70674: Mon Feb 16 18:58:31 2026
+  Description  : [randread_sda_128k_nj64_io128]
+  read: IOPS=4117, BW=515MiB/s (540MB/s)(2089MiB/4059msec)
+  cpu          : usr=0.00%, sys=0.09%, ctx=16692, majf=0, minf=28660
+  IO depths    : 1=0.4%, 2=0.8%, 4=1.5%, 8=2.6%, 16=3.9%, 32=6.9%, >=64=83.9%
+     submit    : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     complete  : 0=0.0%, 4=99.5%, 8=0.1%, 16=0.1%, 32=0.1%, 64=0.1%, >=64=0.3%
+     issued rwts: total=16713,0,0,0 short=0,0,0,0 dropped=0,0,0,0
+     latency   : target=0, window=0, percentile=100.00%, depth=128
+
+Run status group 0 (all jobs):
+   READ: bw=515MiB/s (540MB/s), 515MiB/s-515MiB/s (540MB/s-540MB/s), io=2089MiB (2191MB), run=4059-4059msec
+
+Disk stats (read/write):
+  sda: ios=15781/0, merge=0/0, ticks=957783/0, in_queue=957783, util=100.00%
