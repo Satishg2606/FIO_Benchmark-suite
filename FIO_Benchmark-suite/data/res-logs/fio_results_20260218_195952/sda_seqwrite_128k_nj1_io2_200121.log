@@ -1,0 +1,26 @@
+seqwrite: (g=0): rw=write, bs=(R) 128KiB-128KiB, (W) 128KiB-128KiB, (T) 128KiB-128KiB, ioengine=libaio, iodepth=2
+fio-3.19
+Starting 1 process
+
+fio: terminating on signal 15
+seqwrite: (g=0): rw=write, bs=(R) 128KiB-128KiB, (W) 128KiB-128KiB, (T) 128KiB-128KiB, ioengine=libaio, iodepth=2
+fio-3.19
+Starting 1 process
+
+fio: terminating on signal 15
+
+seqwrite: (groupid=0, jobs=1): err= 0: pid=513009: Wed Feb 18 20:01:23 2026
+  Description  : [seqwrite_sda_128k_nj1_io2]
+  write: IOPS=9, BW=1208KiB/s (1237kB/s)(2048KiB/1696msec); 0 zone resets
+  cpu          : usr=0.00%, sys=0.00%, ctx=18, majf=0, minf=11
+  IO depths    : 1=6.2%, 2=93.8%, 4=0.0%, 8=0.0%, 16=0.0%, 32=0.0%, >=64=0.0%
+     submit    : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     complete  : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     issued rwts: total=0,16,0,0 short=0,0,0,0 dropped=0,0,0,0
+     latency   : target=0, window=0, percentile=100.00%, depth=2
+
+Run status group 0 (all jobs):
+  WRITE: bw=1208KiB/s (1237kB/s), 1208KiB/s-1208KiB/s (1237kB/s-1237kB/s), io=2048KiB (2097kB), run=1696-1696msec
+
+Disk stats (read/write):
+  sda: ios=242/14, merge=0/0, ticks=650/2816, in_queue=3466, util=94.95%

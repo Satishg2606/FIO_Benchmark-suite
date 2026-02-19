@@ -26,16 +26,23 @@ PRECOND_PASSES=1
 RUN_SEQUENTIAL=false
 RUN_PARALLEL=false
 RUN_STRESS=false
+RUN_STRESS=false
 DO_PRECONDITION=true
+DO_PURGE=true
 DRY_RUN=false
 
 # Test parameter arrays
-NUMJOBS_ARRAY=(64)
-IODEPTH_ARRAY=(128 256)
+NUMJOBS_ARRAY=(1 2 4 8 16 32 48)
+IODEPTH_ARRAY=(2 4 8 16 32)
 
 # Preconditioning parameters
-PRECOND_NUMJOBS=4
-PRECOND_IODEPTH=16
+PRECOND_NUMJOBS=32
+PRECOND_IODEPTH=32
+PRECOND_128K_NUMJOBS=32
+PRECOND_128K_IODEPTH=32
+PRECOND_128K_PASSES=2
+PRECOND_4K_RAND_HOURS=2
+COOLDOWN_MINUTES=5
 
 # Latency percentile list for FIO
 PERCENTILE_LIST="50:95:99:99.9"
@@ -90,7 +97,10 @@ get_os_disk() {
 get_disk_type() {
     local disk=$1
     local rotational=$(cat /sys/block/${disk}/queue/rotational 2>/dev/null)
-    if [ "$rotational" == "0" ]; then
+    
+    if [[ "$disk" == nvme* ]]; then
+        echo "NVMe"
+    elif [ "$rotational" == "0" ]; then
         echo "SSD"
     elif [ "$rotational" == "1" ]; then
         echo "HDD"
@@ -155,6 +165,7 @@ detect_disks() {
     declare -g -A DISKS
     declare -g -a HDD_LIST
     declare -g -a SSD_LIST
+    declare -g -a NVME_LIST
 
     local idx=1
 
@@ -169,13 +180,19 @@ detect_disks() {
 
         DISKS[$idx]="${disk}|${type}|${size}|${model}"
 
+        # Classify based on new get_disk_type output
         if [ "$type" == "HDD" ]; then
             HDD_LIST+=($idx)
+            type_color="${BLUE}"
         elif [ "$type" == "SSD" ]; then
             SSD_LIST+=($idx)
+            type_color="${GREEN}"
+        elif [ "$type" == "NVMe" ]; then
+            NVME_LIST+=($idx)
+            type_color="${MAGENTA}"
         fi
 
-        printf "${GREEN}[%2d]${NC} %-10s ${BLUE}%-6s${NC} %-10s %s\n" $idx "/dev/${disk}" "$type" "$size" "$model"
+        printf "${GREEN}[%2d]${NC} %-10s ${type_color}%-6s${NC} %-10s %s\n" $idx "/dev/${disk}" "$type" "$size" "$model"
         ((idx++))
     done
 
@@ -184,8 +201,10 @@ detect_disks() {
 
 select_disks() {
     echo -e "${YELLOW}Select disks for testing:${NC}"
-    echo -e "${GREEN}[A]${NC}  All HDDs (${#HDD_LIST[@]} disks)"
-    echo -e "${GREEN}[S]${NC}  All SSDs (${#SSD_LIST[@]} disks)"
+    echo -e "${GREEN}[A]${NC}  All Disks (HDD + SATA SSD + NVMe)"
+    echo -e "${GREEN}[H]${NC}  All HDDs (${#HDD_LIST[@]} disks)"
+    echo -e "${GREEN}[S]${NC}  All SATA SSDs (${#SSD_LIST[@]} disks)"
+    echo -e "${GREEN}[N]${NC}  All NVMe SSDs (${#NVME_LIST[@]} disks)"
     echo -e "${GREEN}[C]${NC}  Custom selection"
     echo ""
     read -p "Your choice: " disk_choice
@@ -194,12 +213,20 @@ select_disks() {
 
     case $disk_choice in
         A|a)
+            SELECTED_DISKS=("${HDD_LIST[@]}" "${SSD_LIST[@]}" "${NVME_LIST[@]}")
+            echo -e "${GREEN}Selected all available disks${NC}"
+            ;;
+        H|h)
             SELECTED_DISKS=("${HDD_LIST[@]}")
             echo -e "${GREEN}Selected all HDDs${NC}"
             ;;
         S|s)
             SELECTED_DISKS=("${SSD_LIST[@]}")
-            echo -e "${GREEN}Selected all SSDs${NC}"
+            echo -e "${GREEN}Selected all SATA SSDs${NC}"
+            ;;
+        N|n)
+            SELECTED_DISKS=("${NVME_LIST[@]}")
+            echo -e "${GREEN}Selected all NVMe SSDs${NC}"
             ;;
         C|c)
             echo "Enter disk numbers separated by spaces (e.g., 1 3 5):"
@@ -270,6 +297,25 @@ select_tests() {
 }
 
 # ─── Preconditioning ────────────────────────────────────────────────────────
+ask_purge() {
+    echo -e "${YELLOW}Do you want to purge (wipe) the disks before testing?${NC}"
+    echo -e "${RED}WARNING: This will DESTROY ALL DATA on the selected disks!${NC}"
+    echo -e "${GREEN}[Y]${NC} Yes, purge disks (recommended for clean state)"
+    echo -e "${GREEN}[N]${NC} No, skip purge"
+    echo ""
+    read -p "Your choice [Y/N]: " purge_choice
+
+    case $purge_choice in
+        Y|y) DO_PURGE=true
+             echo -e "${GREEN}Purge enabled${NC}" ;;
+        N|n) DO_PURGE=false
+             echo -e "${YELLOW}Purge disabled${NC}" ;;
+        *)   echo -e "${RED}Invalid choice, defaulting to NO purge${NC}"
+             DO_PURGE=false ;;
+    esac
+    echo ""
+}
+
 ask_precondition() {
     echo -e "${YELLOW}Do you want to precondition the disks before testing?${NC}"
     echo -e "${BLUE}Note: Preconditioning writes the entire disk ${PRECOND_PASSES} times to ensure consistent results${NC}"
@@ -372,6 +418,9 @@ precondition_disks_parallel() {
     local bs=$1
     local rw_type=$2
     local test_category=$3
+    local passes=${4:-${PRECOND_PASSES}}
+    local numjobs=${5:-${PRECOND_NUMJOBS}}
+    local iodepth=${6:-${PRECOND_IODEPTH}}
 
     if [ "$DO_PRECONDITION" = false ]; then
         echo -e "${YELLOW}Skipping preconditioning (as per user choice)${NC}"
@@ -382,7 +431,7 @@ precondition_disks_parallel() {
     echo -e "${BLUE}═══════════════════════════════════════════════${NC}"
     echo -e "${BLUE}PARALLEL PRECONDITIONING${NC}"
     echo -e "${BLUE}Type: ${rw_type} | Block Size: ${bs} | Category: ${test_category}${NC}"
-    echo -e "${BLUE}NumJobs: ${PRECOND_NUMJOBS} | IODepth: ${PRECOND_IODEPTH} | Passes: ${PRECOND_PASSES}${NC}"
+    echo -e "${BLUE}NumJobs: ${numjobs} | IODepth: ${iodepth} | Passes: ${passes}${NC}"
     echo -e "${BLUE}═══════════════════════════════════════════════${NC}"
 
     local precond_file="/tmp/fio_precond_${rw_type}_${bs}_${test_category}_$$.fio"
@@ -399,10 +448,10 @@ ioengine=libaio
 direct=1
 bs=${bs}
 rw=${write_type}
-iodepth=${PRECOND_IODEPTH}
-numjobs=${PRECOND_NUMJOBS}
+iodepth=${iodepth}
+numjobs=${numjobs}
 group_reporting=1
-loops=${PRECOND_PASSES}
+loops=${passes}
 time_based=0
 
 EOF
@@ -455,6 +504,149 @@ EOF
     rm -f "$precond_file"
 }
 
+# ─── Time-based preconditioning (for 4k random) ─────────────────────────────
+precondition_disks_timed() {
+    local bs=$1
+    local rw_type=$2
+    local test_category=$3
+    local duration_hours=${4:-2}
+    local numjobs=${5:-${PRECOND_NUMJOBS}}
+    local iodepth=${6:-${PRECOND_IODEPTH}}
+
+    if [ "$DO_PRECONDITION" = false ]; then
+        echo -e "${YELLOW}Skipping preconditioning (as per user choice)${NC}"
+        return
+    fi
+
+    local runtime_secs=$((duration_hours * 3600))
+
+    echo ""
+    echo -e "${BLUE}═══════════════════════════════════════════════${NC}"
+    echo -e "${BLUE}TIME-BASED PARALLEL PRECONDITIONING${NC}"
+    echo -e "${BLUE}Type: ${rw_type} | Block Size: ${bs} | Category: ${test_category}${NC}"
+    echo -e "${BLUE}NumJobs: ${numjobs} | IODepth: ${iodepth} | Duration: ${duration_hours} hours${NC}"
+    echo -e "${BLUE}═══════════════════════════════════════════════${NC}"
+
+    local precond_file="/tmp/fio_precond_${rw_type}_${bs}_${test_category}_$$.fio"
+    local log_file="${LOG_DIR}/precond_timed_${rw_type}_${bs}_${test_category}.log"
+
+    local write_type="write"
+    if [ "$rw_type" == "random" ]; then
+        write_type="randwrite"
+    fi
+
+    cat > "$precond_file" <<EOF
+[global]
+ioengine=libaio
+direct=1
+bs=${bs}
+rw=${write_type}
+iodepth=${iodepth}
+numjobs=${numjobs}
+group_reporting=1
+time_based=1
+runtime=${runtime_secs}
+
+EOF
+
+    for idx in "${SELECTED_DISKS[@]}"; do
+        local disk_info="${DISKS[$idx]}"
+        IFS='|' read -r disk_name disk_type disk_size disk_model <<< "$disk_info"
+        local disk="/dev/${disk_name}"
+
+        cat >> "$precond_file" <<EOF
+[precond_${disk_name}]
+filename=${disk}
+
+EOF
+    done
+
+    if [ "$DRY_RUN" = true ]; then
+        echo -e "${YELLOW}[DRY-RUN] Would run time-based preconditioning with:${NC}"
+        cat "$precond_file"
+        rm -f "$precond_file"
+        return
+    fi
+
+    echo ""
+    echo -e "${CYAN}Starting ${duration_hours}-hour preconditioning of ${#SELECTED_DISKS[@]} disks...${NC}"
+    echo -e "${CYAN}Estimated completion: $(date -d "+${duration_hours} hours" '+%Y-%m-%d %H:%M:%S')${NC}"
+    echo ""
+
+    fio "$precond_file" > "$log_file" 2>&1
+
+    echo -e "${GREEN}✓ Time-based preconditioning complete for all disks${NC}"
+    rm -f "$precond_file"
+}
+
+# ─── Purge/Format disks ─────────────────────────────────────────────────────
+purge_disks() {
+    echo ""
+    echo -e "${MAGENTA}╔════════════════════════════════════════════════╗${NC}"
+    echo -e "${MAGENTA}║  STEP 1: PURGE / FORMAT DISKS                  ║${NC}"
+    echo -e "${MAGENTA}╚════════════════════════════════════════════════╝${NC}"
+    if [ "$DO_PURGE" = false ]; then
+        echo -e "${YELLOW}Skipping purge (as per user choice)${NC}"
+        return
+    fi
+
+    echo -e "${CYAN}Purging ${#SELECTED_DISKS[@]} disks to factory-clean state...${NC}"
+    echo ""
+
+    if [ "$DRY_RUN" = true ]; then
+        echo -e "${YELLOW}[DRY-RUN] Would purge all selected disks${NC}"
+        return
+    fi
+
+    local pids=()
+    for idx in "${SELECTED_DISKS[@]}"; do
+        local disk_info="${DISKS[$idx]}"
+        IFS='|' read -r disk_name disk_type disk_size disk_model <<< "$disk_info"
+        local disk="/dev/${disk_name}"
+
+        if command -v blkdiscard &> /dev/null; then
+            echo -e "${BLUE}  Purging ${disk} (blkdiscard)...${NC}"
+            blkdiscard "$disk" 2>/dev/null &
+            pids+=($!)
+        else
+            echo -e "${BLUE}  Purging ${disk} (dd zero-fill)...${NC}"
+            dd if=/dev/zero of="$disk" bs=1M status=none 2>/dev/null &
+            pids+=($!)
+        fi
+    done
+
+    # Wait for all purge operations to complete
+    for pid in "${pids[@]}"; do
+        wait $pid 2>/dev/null
+    done
+
+    echo -e "${GREEN}✓ All disks purged successfully${NC}"
+}
+
+# ─── Cooldown ────────────────────────────────────────────────────────────────
+cooldown() {
+    local minutes=${1:-${COOLDOWN_MINUTES}}
+    local total_secs=$((minutes * 60))
+
+    echo ""
+    echo -e "${MAGENTA}╔════════════════════════════════════════════════╗${NC}"
+    echo -e "${MAGENTA}║  COOLDOWN — ${minutes} MINUTES IDLE                     ║${NC}"
+    echo -e "${MAGENTA}╚════════════════════════════════════════════════╝${NC}"
+
+    if [ "$DRY_RUN" = true ]; then
+        echo -e "${YELLOW}[DRY-RUN] Would idle for ${minutes} minutes${NC}"
+        return
+    fi
+
+    for ((remaining=total_secs; remaining>0; remaining--)); do
+        local mins=$((remaining / 60))
+        local secs=$((remaining % 60))
+        printf "\r${CYAN}  Cooling down: %02d:%02d remaining...${NC}" $mins $secs
+        sleep 1
+    done
+    printf "\r${GREEN}  Cooldown complete!                          ${NC}\n"
+}
+
 # ─── Single-disk FIO test ───────────────────────────────────────────────────
 run_fio_test_single() {
     local disk=$1
@@ -467,6 +659,12 @@ run_fio_test_single() {
     local output_file="${RESULTS_DIR}/${disk##*/}_${test_name}_${bs}_nj${numjobs}_io${iodepth}_$(date +%H%M%S).log"
 
     echo -e "${BLUE}    nj=${numjobs} io=${iodepth}${NC}"
+
+    # Set rwmixread for randrw tests (70:30 read:write ratio)
+    local rwmixread_param=""
+    if [ "$rw" == "randrw" ]; then
+        rwmixread_param="rwmixread=70"
+    fi
 
     local job_file="/tmp/fio_job_$$.fio"
     cat > "$job_file" <<EOF
@@ -494,6 +692,7 @@ numjobs=${numjobs}
 iodepth=${iodepth}
 runtime=60
 ramp_time=15
+${rwmixread_param}
 
 [${test_name}]
 stonewall
@@ -525,12 +724,13 @@ run_tests_parallel() {
     local output_file="${RESULTS_DIR}/parallel_${test}_${bs}_nj${numjobs}_io${iodepth}_$(date +%H%M%S).log"
 
     local rw_type=""
+    local rwmixread=""
     case $test in
         seqread)  rw_type="read" ;;
         seqwrite) rw_type="write" ;;
         randread) rw_type="randread" ;;
         randwrite) rw_type="randwrite" ;;
-        randrw)   rw_type="randrw" ;;
+        randrw)   rw_type="randrw"; rwmixread="70" ;;
     esac
 
     local job_file="/tmp/fio_parallel_$$.fio"
@@ -559,6 +759,14 @@ numjobs=${numjobs}
 iodepth=${iodepth}
 runtime=60
 ramp_time=15
+EOF
+
+    # Add rwmixread if this is randrw test
+    if [ -n "$rwmixread" ]; then
+        echo "rwmixread=${rwmixread}" >> "$job_file"
+    fi
+
+    cat >> "$job_file" <<EOF
 
 EOF
 
@@ -642,8 +850,8 @@ percentile_list=${PERCENTILE_LIST}
 blockalign=4k
 numjobs=${numjobs}
 iodepth=${iodepth}
-runtime=120
-ramp_time=30
+runtime=60
+ramp_time=15
 
 EOF
 
@@ -679,140 +887,168 @@ EOF
 }
 
 # ─── Comprehensive test suite runner ────────────────────────────────────────
+# Fixed 6-step linear flow:
+#   1. Purge/Format
+#   2. Sequential Precondition (128k, 2 passes)
+#   3. Sequential Benchmarks (128k: Read → Write)
+#   4. Cooldown (5 minutes)
+#   5. Random Precondition (4k, 2 hours time-based)
+#   6. Random Benchmarks (4k: Read → Write → RW 70:30)
+# ────────────────────────────────────────────────────────────────────────────
 run_comprehensive_test_suite() {
-    declare -a SEQ_TESTS
-    declare -a RAND_TESTS
 
-    for test in "${SELECTED_TESTS[@]}"; do
-        case $test in
-            seqread|seqwrite)        SEQ_TESTS+=("$test") ;;
-            randread|randwrite|randrw) RAND_TESTS+=("$test") ;;
-        esac
-    done
+    # ══════════════════════════════════════════════════════════════════════
+    # STEP 1: Purge / Format
+    # ══════════════════════════════════════════════════════════════════════
+    purge_disks
 
-    for bs in "${SELECTED_BLOCK_SIZES[@]}"; do
+    # ══════════════════════════════════════════════════════════════════════
+    # STEP 2: Sequential Preconditioning (128k, 2 passes)
+    # ══════════════════════════════════════════════════════════════════════
+    echo ""
+    echo -e "${MAGENTA}╔════════════════════════════════════════════════╗${NC}"
+    echo -e "${MAGENTA}║  STEP 2: SEQUENTIAL PRECONDITIONING (128k)     ║${NC}"
+    echo -e "${MAGENTA}╚════════════════════════════════════════════════╝${NC}"
+    precondition_disks_parallel "128k" "sequential" "seq" "${PRECOND_128K_PASSES}" "${PRECOND_128K_NUMJOBS}" "${PRECOND_128K_IODEPTH}"
+
+    # ══════════════════════════════════════════════════════════════════════
+    # STEP 3: Sequential Benchmarks (128k: seqread → seqwrite)
+    # ══════════════════════════════════════════════════════════════════════
+    echo ""
+    echo -e "${GREEN}╔════════════════════════════════════════════════╗${NC}"
+    echo -e "${GREEN}║  STEP 3: SEQUENTIAL BENCHMARKS (128k)          ║${NC}"
+    echo -e "${GREEN}╚════════════════════════════════════════════════╝${NC}"
+
+    local SEQ_TESTS=("seqwrite" "seqread")
+
+    if [ "$RUN_SEQUENTIAL" = true ]; then
         echo ""
-        echo -e "${GREEN}╔════════════════════════════════════════════════╗${NC}"
-        echo -e "${GREEN}║      TESTING WITH BLOCK SIZE: ${bs}              ${NC}"
-        echo -e "${GREEN}╚════════════════════════════════════════════════╝${NC}"
+        echo -e "${YELLOW}═══════════════════════════════════════════════${NC}"
+        echo -e "${YELLOW}Sequential Mode — 128k Tests${NC}"
+        echo -e "${YELLOW}═══════════════════════════════════════════════${NC}"
 
-        # ── Sequential Tests ──
-        if [ ${#SEQ_TESTS[@]} -gt 0 ]; then
+        for test in "${SEQ_TESTS[@]}"; do
+            echo ""
+            echo -e "${CYAN}Test: ${test} | Block Size: 128k${NC}"
 
-            if [ "$RUN_SEQUENTIAL" = true ]; then
-                echo ""
-                echo -e "${YELLOW}═══════════════════════════════════════════════${NC}"
-                echo -e "${YELLOW}Sequential Mode — Sequential Tests (${bs})${NC}"
-                echo -e "${YELLOW}═══════════════════════════════════════════════${NC}"
-
-                for test in "${SEQ_TESTS[@]}"; do
-                    echo ""
-                    echo -e "${CYAN}Test: ${test} | Block Size: ${bs}${NC}"
-                    precondition_disks_parallel "${bs}" "sequential" "seq"
-
-                    for numjobs in "${NUMJOBS_ARRAY[@]}"; do
-                        for iodepth in "${IODEPTH_ARRAY[@]}"; do
-                            echo -e "${YELLOW}  Configuration: numjobs=${numjobs}, iodepth=${iodepth}${NC}"
-                            for idx in "${SELECTED_DISKS[@]}"; do
-                                local disk_info="${DISKS[$idx]}"
-                                IFS='|' read -r disk_name disk_type disk_size disk_model <<< "$disk_info"
-                                local disk="/dev/${disk_name}"
-                                echo -e "${BLUE}    → ${disk}${NC}"
-                                case $test in
-                                    seqread)  run_fio_test_single "$disk" "seqread" "read" "${bs}" "$numjobs" "$iodepth" ;;
-                                    seqwrite) run_fio_test_single "$disk" "seqwrite" "write" "${bs}" "$numjobs" "$iodepth" ;;
-                                esac
-                            done
-                        done
+            for numjobs in "${NUMJOBS_ARRAY[@]}"; do
+                for iodepth in "${IODEPTH_ARRAY[@]}"; do
+                    echo -e "${YELLOW}  Configuration: numjobs=${numjobs}, iodepth=${iodepth}${NC}"
+                    for idx in "${SELECTED_DISKS[@]}"; do
+                        local disk_info="${DISKS[$idx]}"
+                        IFS='|' read -r disk_name disk_type disk_size disk_model <<< "$disk_info"
+                        local disk="/dev/${disk_name}"
+                        echo -e "${BLUE}    → ${disk}${NC}"
+                        case $test in
+                            seqread)  run_fio_test_single "$disk" "seqread" "read" "128k" "$numjobs" "$iodepth" ;;
+                            seqwrite) run_fio_test_single "$disk" "seqwrite" "write" "128k" "$numjobs" "$iodepth" ;;
+                        esac
                     done
                 done
-            fi
+            done
+        done
+    fi
 
-            if [ "$RUN_PARALLEL" = true ]; then
-                echo ""
-                echo -e "${YELLOW}═══════════════════════════════════════════════${NC}"
-                echo -e "${YELLOW}Parallel Mode — Sequential Tests (${bs})${NC}"
-                echo -e "${YELLOW}═══════════════════════════════════════════════${NC}"
+    if [ "$RUN_PARALLEL" = true ]; then
+        echo ""
+        echo -e "${YELLOW}═══════════════════════════════════════════════${NC}"
+        echo -e "${YELLOW}Parallel Mode — 128k Tests${NC}"
+        echo -e "${YELLOW}═══════════════════════════════════════════════${NC}"
 
-                for test in "${SEQ_TESTS[@]}"; do
-                    echo ""
-                    echo -e "${CYAN}Test: ${test} | Block Size: ${bs}${NC}"
-                    precondition_disks_parallel "${bs}" "sequential" "seq"
+        for test in "${SEQ_TESTS[@]}"; do
+            echo ""
+            echo -e "${CYAN}Test: ${test} | Block Size: 128k${NC}"
 
-                    for numjobs in "${NUMJOBS_ARRAY[@]}"; do
-                        for iodepth in "${IODEPTH_ARRAY[@]}"; do
-                            run_tests_parallel "${bs}" "$test" "$numjobs" "$iodepth"
-                        done
+            for numjobs in "${NUMJOBS_ARRAY[@]}"; do
+                for iodepth in "${IODEPTH_ARRAY[@]}"; do
+                    run_tests_parallel "128k" "$test" "$numjobs" "$iodepth"
+                done
+            done
+        done
+    fi
+
+    if [ "$RUN_STRESS" = true ]; then
+        for test in "${SEQ_TESTS[@]}"; do
+            run_stress_test "128k" "$test" "sequential"
+        done
+    fi
+
+    # ══════════════════════════════════════════════════════════════════════
+    # STEP 4: Cooldown (5 minutes)
+    # ══════════════════════════════════════════════════════════════════════
+    cooldown ${COOLDOWN_MINUTES}
+
+    # ══════════════════════════════════════════════════════════════════════
+    # STEP 5: Random Preconditioning (4k, 2 hours time-based)
+    # ══════════════════════════════════════════════════════════════════════
+    echo ""
+    echo -e "${MAGENTA}╔════════════════════════════════════════════════╗${NC}"
+    echo -e "${MAGENTA}║  STEP 5: RANDOM PRECONDITIONING (4k, 2 hrs)   ║${NC}"
+    echo -e "${MAGENTA}╚════════════════════════════════════════════════╝${NC}"
+    precondition_disks_timed "4k" "random" "rand" "${PRECOND_4K_RAND_HOURS}" "${PRECOND_NUMJOBS}" "${PRECOND_IODEPTH}"
+
+    # ══════════════════════════════════════════════════════════════════════
+    # STEP 6: Random Benchmarks (4k: randread → randwrite → randrw)
+    # ══════════════════════════════════════════════════════════════════════
+    echo ""
+    echo -e "${GREEN}╔════════════════════════════════════════════════╗${NC}"
+    echo -e "${GREEN}║  STEP 6: RANDOM BENCHMARKS (4k)                ║${NC}"
+    echo -e "${GREEN}╚════════════════════════════════════════════════╝${NC}"
+
+    local RAND_TESTS=("randwrite" "randread" "randrw")
+
+    if [ "$RUN_SEQUENTIAL" = true ]; then
+        echo ""
+        echo -e "${YELLOW}═══════════════════════════════════════════════${NC}"
+        echo -e "${YELLOW}Sequential Mode — 4k Random Tests${NC}"
+        echo -e "${YELLOW}═══════════════════════════════════════════════${NC}"
+
+        for test in "${RAND_TESTS[@]}"; do
+            echo ""
+            echo -e "${CYAN}Test: ${test} | Block Size: 4k${NC}"
+
+            for numjobs in "${NUMJOBS_ARRAY[@]}"; do
+                for iodepth in "${IODEPTH_ARRAY[@]}"; do
+                    echo -e "${YELLOW}  Configuration: numjobs=${numjobs}, iodepth=${iodepth}${NC}"
+                    for idx in "${SELECTED_DISKS[@]}"; do
+                        local disk_info="${DISKS[$idx]}"
+                        IFS='|' read -r disk_name disk_type disk_size disk_model <<< "$disk_info"
+                        local disk="/dev/${disk_name}"
+                        echo -e "${BLUE}    → ${disk}${NC}"
+                        case $test in
+                            randread)  run_fio_test_single "$disk" "randread" "randread" "4k" "$numjobs" "$iodepth" ;;
+                            randwrite) run_fio_test_single "$disk" "randwrite" "randwrite" "4k" "$numjobs" "$iodepth" ;;
+                            randrw)    run_fio_test_single "$disk" "randrw" "randrw" "4k" "$numjobs" "$iodepth" ;;
+                        esac
                     done
                 done
-            fi
+            done
+        done
+    fi
 
-            if [ "$RUN_STRESS" = true ]; then
-                for test in "${SEQ_TESTS[@]}"; do
-                    run_stress_test "${bs}" "$test" "sequential"
+    if [ "$RUN_PARALLEL" = true ]; then
+        echo ""
+        echo -e "${YELLOW}═══════════════════════════════════════════════${NC}"
+        echo -e "${YELLOW}Parallel Mode — 4k Random Tests${NC}"
+        echo -e "${YELLOW}═══════════════════════════════════════════════${NC}"
+
+        for test in "${RAND_TESTS[@]}"; do
+            echo ""
+            echo -e "${CYAN}Test: ${test} | Block Size: 4k${NC}"
+
+            for numjobs in "${NUMJOBS_ARRAY[@]}"; do
+                for iodepth in "${IODEPTH_ARRAY[@]}"; do
+                    run_tests_parallel "4k" "$test" "$numjobs" "$iodepth"
                 done
-            fi
-        fi
+            done
+        done
+    fi
 
-        # ── Random Tests ──
-        if [ ${#RAND_TESTS[@]} -gt 0 ]; then
-
-            if [ "$RUN_SEQUENTIAL" = true ]; then
-                echo ""
-                echo -e "${YELLOW}═══════════════════════════════════════════════${NC}"
-                echo -e "${YELLOW}Sequential Mode — Random Tests (${bs})${NC}"
-                echo -e "${YELLOW}═══════════════════════════════════════════════${NC}"
-
-                for test in "${RAND_TESTS[@]}"; do
-                    echo ""
-                    echo -e "${CYAN}Test: ${test} | Block Size: ${bs}${NC}"
-                    precondition_disks_parallel "${bs}" "random" "rand"
-
-                    for numjobs in "${NUMJOBS_ARRAY[@]}"; do
-                        for iodepth in "${IODEPTH_ARRAY[@]}"; do
-                            echo -e "${YELLOW}  Configuration: numjobs=${numjobs}, iodepth=${iodepth}${NC}"
-                            for idx in "${SELECTED_DISKS[@]}"; do
-                                local disk_info="${DISKS[$idx]}"
-                                IFS='|' read -r disk_name disk_type disk_size disk_model <<< "$disk_info"
-                                local disk="/dev/${disk_name}"
-                                echo -e "${BLUE}    → ${disk}${NC}"
-                                case $test in
-                                    randread)  run_fio_test_single "$disk" "randread" "randread" "${bs}" "$numjobs" "$iodepth" ;;
-                                    randwrite) run_fio_test_single "$disk" "randwrite" "randwrite" "${bs}" "$numjobs" "$iodepth" ;;
-                                    randrw)    run_fio_test_single "$disk" "randrw" "randrw" "${bs}" "$numjobs" "$iodepth" ;;
-                                esac
-                            done
-                        done
-                    done
-                done
-            fi
-
-            if [ "$RUN_PARALLEL" = true ]; then
-                echo ""
-                echo -e "${YELLOW}═══════════════════════════════════════════════${NC}"
-                echo -e "${YELLOW}Parallel Mode — Random Tests (${bs})${NC}"
-                echo -e "${YELLOW}═══════════════════════════════════════════════${NC}"
-
-                for test in "${RAND_TESTS[@]}"; do
-                    echo ""
-                    echo -e "${CYAN}Test: ${test} | Block Size: ${bs}${NC}"
-                    precondition_disks_parallel "${bs}" "random" "rand"
-
-                    for numjobs in "${NUMJOBS_ARRAY[@]}"; do
-                        for iodepth in "${IODEPTH_ARRAY[@]}"; do
-                            run_tests_parallel "${bs}" "$test" "$numjobs" "$iodepth"
-                        done
-                    done
-                done
-            fi
-
-            if [ "$RUN_STRESS" = true ]; then
-                for test in "${RAND_TESTS[@]}"; do
-                    run_stress_test "${bs}" "$test" "random"
-                done
-            fi
-        fi
-    done
+    if [ "$RUN_STRESS" = true ]; then
+        for test in "${RAND_TESTS[@]}"; do
+            run_stress_test "4k" "$test" "random"
+        done
+    fi
 }
 
 # ─── Main ────────────────────────────────────────────────────────────────────
@@ -850,13 +1086,19 @@ main() {
         exit 1
     fi
 
-    select_block_sizes
-    select_tests
-    if [ ${#SELECTED_TESTS[@]} -eq 0 ]; then
-        echo -e "${RED}No tests selected${NC}"
-        exit 1
-    fi
+    # Block sizes and tests are fixed:
+    # 128k: seqread, seqwrite
+    # 4k: randread, randwrite, randrw (70:30)
+    echo -e "${CYAN}Fixed test plan:${NC}"
+    echo -e "${CYAN}  Step 1: Purge disks${NC}"
+    echo -e "${CYAN}  Step 2: Precondition 128k sequential (2 passes, 32NJ/32IO)${NC}"
+    echo -e "${CYAN}  Step 3: 128k Sequential Write → Sequential Read${NC}"
+    echo -e "${CYAN}  Step 4: Cooldown (${COOLDOWN_MINUTES} minutes)${NC}"
+    echo -e "${CYAN}  Step 5: Precondition 4k random (${PRECOND_4K_RAND_HOURS} hours, 32NJ/32IO)${NC}"
+    echo -e "${CYAN}  Step 6: 4k Random Write → Random Read → Random RW (70:30)${NC}"
+    echo ""
 
+    ask_purge
     ask_precondition
     ask_execution_mode
 
@@ -866,10 +1108,16 @@ main() {
     echo -e "${YELLOW}BENCHMARK CONFIGURATION SUMMARY${NC}"
     echo -e "${YELLOW}═══════════════════════════════════════════════${NC}"
     echo -e "Disks: ${GREEN}${#SELECTED_DISKS[@]}${NC}"
-    echo -e "Block Sizes: ${GREEN}${SELECTED_BLOCK_SIZES[*]}${NC}"
-    echo -e "Tests: ${GREEN}${SELECTED_TESTS[*]}${NC}"
+    echo -e "Test Flow:${NC}"
+    echo -e "  ${GREEN}1${NC}. Purge/Format all disks"
+    echo -e "  ${GREEN}2${NC}. 128k sequential precondition (2 passes, 32NJ/32IO)"
+    echo -e "  ${GREEN}3${NC}. 128k benchmarks: Sequential Read, Sequential Write"
+    echo -e "  ${GREEN}4${NC}. Cooldown: ${COOLDOWN_MINUTES} minutes"
+    echo -e "  ${GREEN}5${NC}. 4k random precondition (${PRECOND_4K_RAND_HOURS} hours, 32NJ/32IO)"
+    echo -e "  ${GREEN}6${NC}. 4k benchmarks: Random Read, Random Write, Random RW (70:30)"
     echo -e "Latency Percentiles: ${GREEN}${PERCENTILE_LIST}${NC}"
-    echo -e "Preconditioning: ${GREEN}$([ "$DO_PRECONDITION" = true ] && echo "Enabled (nj=${PRECOND_NUMJOBS}, io=${PRECOND_IODEPTH})" || echo "Disabled")${NC}"
+    echo -e "Purge: ${GREEN}$([ "$DO_PURGE" = true ] && echo "Enabled" || echo "Disabled")${NC}"
+    echo -e "Preconditioning: ${GREEN}$([ "$DO_PRECONDITION" = true ] && echo "Enabled" || echo "Disabled")${NC}"
     echo -e "Execution Modes:"
     [ "$RUN_SEQUENTIAL" = true ] && echo -e "  ${GREEN}✓${NC} Sequential (numjobs: ${NUMJOBS_ARRAY[*]} | iodepth: ${IODEPTH_ARRAY[*]})"
     [ "$RUN_PARALLEL" = true ]   && echo -e "  ${GREEN}✓${NC} Parallel (numjobs: ${NUMJOBS_ARRAY[*]} | iodepth: ${IODEPTH_ARRAY[*]})"

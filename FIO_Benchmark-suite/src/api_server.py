@@ -20,6 +20,7 @@ import sys
 import time
 from datetime import datetime
 from pathlib import Path
+from typing import Dict, List
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -51,7 +52,7 @@ app.add_middleware(
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
-def read_csv_file(filepath: str) -> list[dict]:
+def read_csv_file(filepath: str) -> List[Dict]:
     """Read a CSV file and return list of dicts."""
     rows = []
     with open(filepath, "r", newline="") as f:
@@ -74,7 +75,7 @@ def read_csv_file(filepath: str) -> list[dict]:
     return rows
 
 
-def list_csv_files(directory: str) -> list[dict]:
+def list_csv_files(directory: str) -> List[Dict]:
     """List CSV files in a directory with metadata."""
     results = []
     dirpath = Path(directory)
