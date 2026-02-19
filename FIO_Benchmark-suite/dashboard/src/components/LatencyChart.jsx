@@ -1,6 +1,6 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
-    LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+    XAxis, YAxis, CartesianGrid, Tooltip, Legend,
     ResponsiveContainer, Area, AreaChart
 } from 'recharts';
 
@@ -22,7 +22,7 @@ const CustomTooltip = ({ active, payload, label }) => {
             fontSize: '0.82rem',
             fontFamily: 'var(--font-mono)',
         }}>
-            <div style={{ color: 'var(--text-muted)', marginBottom: 4 }}>{label}</div>
+            <div style={{ color: 'var(--text-muted)', marginBottom: 4 }}>numjobs={label}</div>
             {payload.map((entry, i) => (
                 <div key={i} style={{ color: entry.color, marginTop: 2 }}>
                     {entry.name}: <strong>{Number(entry.value).toLocaleString()} µs</strong>
@@ -33,24 +33,45 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 export default function LatencyChart({ data }) {
-    const chartData = useMemo(() => {
-        if (!data || data.length === 0) return [];
+    const [selectedIoDepth, setSelectedIoDepth] = useState('');
 
-        return data.map(row => {
-            const label = `${row.test_type}-${row.block_size}-nj${row.numjobs}-io${row.iodepth}`;
-            return {
-                label,
-                direction: row.direction || 'read',
-                p50: row.lat_p50_us || 0,
-                p95: row.lat_p95_us || 0,
-                p99: row.lat_p99_us || 0,
-                p999: row.lat_p999_us || 0,
-                mean: row.lat_mean_us || 0,
-            };
-        });
+    // Get unique iodepth values
+    const ioDepths = useMemo(() => {
+        if (!data || data.length === 0) return [];
+        return [...new Set(data.map(r => Number(r.iodepth) || 0))].sort((a, b) => a - b);
     }, [data]);
 
-    if (chartData.length === 0) {
+    // Auto-select first iodepth
+    const activeIoDepth = useMemo(() => {
+        const sel = Number(selectedIoDepth);
+        if (sel && ioDepths.includes(sel)) return sel;
+        return ioDepths[0] || 0;
+    }, [selectedIoDepth, ioDepths]);
+
+    const chartData = useMemo(() => {
+        if (!data || data.length === 0 || !activeIoDepth) return [];
+
+        // Filter to selected iodepth
+        const filtered = data.filter(r => Number(r.iodepth) === activeIoDepth);
+
+        // Get unique numjobs sorted
+        const njSet = [...new Set(filtered.map(r => Number(r.numjobs) || 0))].sort((a, b) => a - b);
+
+        return njSet.map(nj => {
+            // Find the matching row (take the first/primary direction row)
+            const row = filtered.find(r => Number(r.numjobs) === nj);
+            return {
+                label: String(nj),
+                p50: row ? (row.lat_p50_us || 0) : 0,
+                p95: row ? (row.lat_p95_us || 0) : 0,
+                p99: row ? (row.lat_p99_us || 0) : 0,
+                p999: row ? (row.lat_p999_us || 0) : 0,
+                mean: row ? (row.lat_mean_us || 0) : 0,
+            };
+        });
+    }, [data, activeIoDepth]);
+
+    if (!data || data.length === 0 || chartData.length === 0) {
         return null;
     }
 
@@ -59,11 +80,23 @@ export default function LatencyChart({ data }) {
             <div className="card-header">
                 <div>
                     <div className="card-title">⏱ Latency Distribution (µs)</div>
-                    <div className="card-subtitle">Percentile breakdown: p50, p95, p99, p99.9</div>
+                    <div className="card-subtitle">Percentile breakdown per numjobs · Select I/O depth below</div>
+                </div>
+                <div className="filter-pills" style={{ marginLeft: 'auto' }}>
+                    {ioDepths.map(io => (
+                        <button
+                            key={io}
+                            className={`filter-pill${activeIoDepth === io ? ' active' : ''}`}
+                            onClick={() => setSelectedIoDepth(String(io))}
+                            style={{ padding: '4px 10px', fontSize: '0.75rem' }}
+                        >
+                            io={io}
+                        </button>
+                    ))}
                 </div>
             </div>
             <ResponsiveContainer width="100%" height={360}>
-                <AreaChart data={chartData} margin={{ top: 10, right: 20, bottom: 60, left: 10 }}>
+                <AreaChart data={chartData} margin={{ top: 10, right: 20, bottom: 30, left: 10 }}>
                     <defs>
                         <linearGradient id="gradP50" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="5%" stopColor={PERCENTILE_COLORS.p50} stopOpacity={0.3} />
@@ -85,10 +118,8 @@ export default function LatencyChart({ data }) {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis
                         dataKey="label"
-                        tick={{ fontSize: 10, fill: 'var(--text-muted)' }}
-                        angle={-30}
-                        textAnchor="end"
-                        height={80}
+                        tick={{ fontSize: 11, fill: 'var(--text-muted)' }}
+                        label={{ value: 'numjobs', position: 'insideBottom', offset: -5, style: { fill: 'var(--text-muted)', fontSize: '0.78rem' } }}
                     />
                     <YAxis
                         tick={{ fontSize: 11 }}

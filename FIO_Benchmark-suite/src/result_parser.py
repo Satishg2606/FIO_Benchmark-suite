@@ -269,17 +269,63 @@ def parse_directory(input_dir: str) -> List[Dict]:
     return all_results
 
 
+def _block_size_to_bytes(bs: str) -> int:
+    """Convert block size string like '4k' or '128k' to numeric bytes for sorting."""
+    bs = bs.lower().strip()
+    match = re.match(r"(\d+)\s*(k|m|g)?", bs)
+    if not match:
+        return 0
+    value = int(match.group(1))
+    suffix = match.group(2) or ""
+    if suffix == "k":
+        return value * 1024
+    elif suffix == "m":
+        return value * 1024 * 1024
+    elif suffix == "g":
+        return value * 1024 * 1024 * 1024
+    return value
+
+
+# Custom ordering for test types to group related tests together
+_TEST_TYPE_ORDER = {
+    "seqread": 0,
+    "seqwrite": 1,
+    "randread": 2,
+    "randwrite": 3,
+    "randrw": 4,
+}
+
+
+def sort_results(results: List[Dict]) -> List[Dict]:
+    """
+    Sort results for easy performance analysis.
+    Order: test_type (seq read → seq write → rand read → rand write → rand rw),
+           block_size (increasing), numjobs (increasing), iodepth (increasing).
+    """
+    def sort_key(row):
+        test_type = row.get("test_type", "unknown").lower()
+        type_order = _TEST_TYPE_ORDER.get(test_type, 99)
+        bs_bytes = _block_size_to_bytes(row.get("block_size", "0"))
+        numjobs = int(row.get("numjobs", 0))
+        iodepth = int(row.get("iodepth", 0))
+        return (type_order, bs_bytes, numjobs, iodepth)
+
+    return sorted(results, key=sort_key)
+
+
 def write_csv(results: List[Dict], output_path: str) -> None:
-    """Write parsed results to a CSV file."""
+    """Write parsed results to a CSV file, sorted for easy analysis."""
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
+    sorted_results = sort_results(results)
 
     with open(output_path, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=RESULT_CSV_COLUMNS)
         writer.writeheader()
-        for row in results:
+        for row in sorted_results:
             writer.writerow(row)
 
-    print(f"✓ Wrote {len(results)} result rows to {output_path}")
+    print(f"✓ Wrote {len(sorted_results)} result rows to {output_path}")
 
 
 def main():

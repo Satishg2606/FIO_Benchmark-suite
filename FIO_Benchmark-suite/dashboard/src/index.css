@@ -475,6 +475,75 @@ body {
   outline: none;
 }
 
+/* ── Filter Bar ────────────────────────────────────────────── */
+.filter-bar {
+  margin-bottom: var(--space-lg);
+}
+
+.filter-bar-inner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.filter-label {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.filter-pills {
+  display: flex;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+}
+
+.filter-pill {
+  padding: 6px 14px;
+  border: 1px solid var(--border-glass);
+  border-radius: 999px;
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: transparent;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.filter-pill:hover {
+  color: var(--text-primary);
+  border-color: var(--border-hover);
+  background: var(--bg-glass);
+}
+
+.filter-pill.active {
+  color: white;
+  background: var(--gradient-primary);
+  border-color: transparent;
+  box-shadow: 0 2px 12px rgba(59, 130, 246, 0.25);
+}
+
+.filter-pill.compare {
+  border-color: rgba(139, 92, 246, 0.3);
+  color: var(--accent-purple);
+}
+
+.filter-pill.compare:hover {
+  border-color: var(--accent-purple);
+  background: rgba(139, 92, 246, 0.1);
+}
+
+.filter-pill.compare.active {
+  background: linear-gradient(135deg, #8b5cf6, #a78bfa);
+  border-color: transparent;
+  color: white;
+  box-shadow: 0 2px 12px rgba(139, 92, 246, 0.3);
+}
+
 /* ── Page transitions ──────────────────────────────────────── */
 .page-enter {
   animation: fadeIn 0.3s ease;

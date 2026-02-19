@@ -1,13 +1,57 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import HistoryTable from '../components/HistoryTable';
 import BenchmarkCharts from '../components/BenchmarkCharts';
 import LatencyChart from '../components/LatencyChart';
+import ComparisonCharts from '../components/ComparisonCharts';
 import { useBenchmarkResults, useResultData } from '../hooks/useBenchmarks';
+
+const TEST_TYPE_ORDER = ['seqread', 'seqwrite', 'randread', 'randwrite', 'randrw'];
+
+const TEST_TYPE_LABELS = {
+    seqread: 'Sequential Read',
+    seqwrite: 'Sequential Write',
+    randread: 'Random Read',
+    randwrite: 'Random Write',
+    randrw: 'Random Read/Write',
+};
 
 export default function HistoryPage() {
     const { resultSets, loading, refresh } = useBenchmarkResults();
     const [selectedSet, setSelectedSet] = useState('');
     const { data, loading: loadingData } = useResultData(selectedSet);
+    const [selectedTestType, setSelectedTestType] = useState('');
+
+    // Derive available test types
+    const testTypes = useMemo(() => {
+        if (!data || data.length === 0) return [];
+        const types = [...new Set(data.map(r => r.test_type))];
+        types.sort((a, b) => {
+            const ia = TEST_TYPE_ORDER.indexOf(a);
+            const ib = TEST_TYPE_ORDER.indexOf(b);
+            return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+        });
+        return types;
+    }, [data]);
+
+    const activeTestType = useMemo(() => {
+        if (selectedTestType && (testTypes.includes(selectedTestType) || selectedTestType === '__compare__')) {
+            return selectedTestType;
+        }
+        return testTypes[0] || '';
+    }, [selectedTestType, testTypes]);
+
+    const filteredData = useMemo(() => {
+        if (!data || data.length === 0) return [];
+        if (activeTestType === '__compare__') return data;
+        return data.filter(r => r.test_type === activeTestType);
+    }, [data, activeTestType]);
+
+    const isCompareMode = activeTestType === '__compare__';
+
+    const handleSelect = (name) => {
+        setSelectedSet(name);
+        setSelectedTestType('');
+    };
 
     return (
         <>
@@ -26,7 +70,7 @@ export default function HistoryPage() {
                 <div className="section">
                     <HistoryTable
                         results={resultSets}
-                        onSelect={setSelectedSet}
+                        onSelect={handleSelect}
                         selectedName={selectedSet}
                     />
                 </div>
@@ -36,12 +80,41 @@ export default function HistoryPage() {
 
             {data && data.length > 0 && (
                 <>
-                    {/* Data Table */}
+                    {/* Test Type Filter */}
+                    {testTypes.length > 0 && (
+                        <div className="card filter-bar">
+                            <div className="filter-bar-inner">
+                                <div className="filter-label">🔬 Test Type</div>
+                                <div className="filter-pills">
+                                    {testTypes.map(tt => (
+                                        <button
+                                            key={tt}
+                                            className={`filter-pill${activeTestType === tt ? ' active' : ''}`}
+                                            onClick={() => setSelectedTestType(tt)}
+                                        >
+                                            {TEST_TYPE_LABELS[tt] || tt}
+                                        </button>
+                                    ))}
+                                    <button
+                                        className={`filter-pill compare${isCompareMode ? ' active' : ''}`}
+                                        onClick={() => setSelectedTestType('__compare__')}
+                                    >
+                                        📊 Compare All
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Data Table — filtered */}
                     <div className="section">
                         <div className="card">
                             <div className="card-header">
-                                <div className="card-title">📋 Raw Data — {selectedSet}</div>
-                                <div className="card-subtitle">{data.length} records</div>
+                                <div className="card-title">
+                                    📋 Raw Data — {selectedSet}
+                                    {!isCompareMode && ` — ${TEST_TYPE_LABELS[activeTestType] || activeTestType}`}
+                                </div>
+                                <div className="card-subtitle">{filteredData.length} records</div>
                             </div>
                             <div style={{ overflowX: 'auto' }}>
                                 <table className="data-table">
@@ -63,7 +136,7 @@ export default function HistoryPage() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {data.map((row, i) => (
+                                        {filteredData.map((row, i) => (
                                             <tr key={i}>
                                                 <td style={{ color: 'var(--text-primary)' }}>{row.disk}</td>
                                                 <td>
@@ -94,13 +167,21 @@ export default function HistoryPage() {
                         </div>
                     </div>
 
-                    {/* Charts for selected set */}
-                    <div className="section">
-                        <BenchmarkCharts data={data} />
-                    </div>
-                    <div className="section">
-                        <LatencyChart data={data} />
-                    </div>
+                    {/* Charts */}
+                    {isCompareMode ? (
+                        <div className="section">
+                            <ComparisonCharts data={data} />
+                        </div>
+                    ) : (
+                        <>
+                            <div className="section">
+                                <BenchmarkCharts data={filteredData} />
+                            </div>
+                            <div className="section">
+                                <LatencyChart data={filteredData} />
+                            </div>
+                        </>
+                    )}
                 </>
             )}
         </>
