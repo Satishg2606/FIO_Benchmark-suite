@@ -23,7 +23,6 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from config import PARSED_RESULTS_DIR, RESULT_CSV_COLUMNS
 
 
-# ── Regex patterns for FIO text output ──────────────────────────────────────
 # Matches lines like:  read: IOPS=125k, BW=501MiB/s (525MB/s)(29.4GiB/60002msec)
 RE_IOPS_BW = re.compile(
     r"(read|write)\s*:\s*IOPS=([\d.]+[kKmM]?),\s*BW=([\d.]+)(\w+/s)",
@@ -31,16 +30,10 @@ RE_IOPS_BW = re.compile(
 )
 
 # Matches lines like:     lat (usec): min=152, max=58420, avg=512.34, stdev=231.10
-# or                      lat (msec): min=1, max=58, avg= 5.12, stdev= 2.31
-RE_LAT_MEAN = re.compile(
-    r"lat\s*\((\w+)\)\s*:\s*min=\s*([\d.]+),\s*max=\s*([\d.]+),\s*avg=\s*([\d.]+)",
-    re.IGNORECASE,
-)
-
-# Matches percentile lines like:     | 50.00th=[  486], 95.00th=[ 1020], ...
-# or the multi-line percentile blocks
-RE_PERCENTILE = re.compile(
-    r"([\d.]+)th=\[\s*([\d.]+)\]", re.IGNORECASE
+# We only match "lat" exactly, avoiding clat/slat
+RE_LAT_AVG = re.compile(
+    r"^\s+lat\s*\((\w+)\)\s*:\s*min=.*avg=\s*([\d.]+)",
+    re.MULTILINE | re.IGNORECASE,
 )
 
 # Matches the job description to extract disk/test params from the description field
@@ -77,17 +70,23 @@ def parse_iops_value(raw: str) -> float:
         return 0.0
 
 
-def parse_bw_to_kbs(value: float, unit: str) -> float:
-    """Convert bandwidth value to KB/s."""
+def parse_bw_to_bps(value: float, unit: str) -> float:
+    """Convert bandwidth value to Bytes/s."""
     unit_lower = unit.lower()
-    if "gib/s" in unit_lower or "gb/s" in unit_lower:
-        return value * 1_048_576  # GiB -> KiB
-    elif "mib/s" in unit_lower or "mb/s" in unit_lower:
+    if "gib/s" in unit_lower:
+        return value * 1024 * 1024 * 1024
+    elif "gb/s" in unit_lower:
+        return value * 1000 * 1000 * 1000
+    elif "mib/s" in unit_lower:
+        return value * 1024 * 1024
+    elif "mb/s" in unit_lower:
+        return value * 1000 * 1000
+    elif "kib/s" in unit_lower:
         return value * 1024
-    elif "kib/s" in unit_lower or "kb/s" in unit_lower:
-        return value
+    elif "kb/s" in unit_lower:
+        return value * 1000
     elif "b/s" in unit_lower:
-        return value / 1024
+        return value
     return value
 
 
@@ -129,8 +128,8 @@ def extract_metadata_from_filename(filename: str) -> dict:
 
 def parse_fio_log(filepath: str) -> List[Dict]:
     """
-    Parse a single FIO plain-text log file and return a list of result dicts
-    (one per direction: read, write, or both for randrw).
+    Parse a single FIO plain-text log file and return a list of result dicts.
+    Aggregates metrics (sum IOPS/BW, mean Latency) across all jobs/disks in the file.
     """
     if not os.path.isfile(filepath):
         return []
@@ -153,7 +152,7 @@ def parse_fio_log(filepath: str) -> List[Dict]:
             }
         else:
             metadata = {
-                "disk": "unknown",
+                "disk": "multi",
                 "test_type": "unknown",
                 "block_size": "unknown",
                 "numjobs": "0",
@@ -168,81 +167,107 @@ def parse_fio_log(filepath: str) -> List[Dict]:
     except Exception:
         timestamp = datetime.now().isoformat()
 
+    # Collect all metrics per direction for aggregation
+    raw_metrics = {
+        "read": {"iops": [], "bw_bps": [], "lat_us": []},
+        "write": {"iops": [], "bw_bps": [], "lat_us": []}
+    }
+
+    # Split the log by job headers to associate latencies with directions correctly
+    job_sections = re.split(r'\n[\w.@-]+: \(groupid=\d+, jobs=\d+\):', content)
+    
+    for section in job_sections:
+        # Each job section might have a read and/or write block
+        # Find where read and write blocks start
+        dir_matches = list(re.finditer(r"^\s+(read|write)\s*:", section, re.M | re.IGNORECASE))
+        for i, d_match in enumerate(dir_matches):
+            direction = d_match.group(1).lower()
+            start_pos = d_match.start()
+            end_pos = dir_matches[i+1].start() if i+1 < len(dir_matches) else len(section)
+            chunk = section[start_pos:end_pos]
+            
+            # Parse IOPS & BW
+            bw_match = RE_IOPS_BW.search(chunk)
+            if bw_match:
+                iops = parse_iops_value(bw_match.group(2))
+                bw_val = float(bw_match.group(3))
+                bw_unit = bw_match.group(4)
+                bw_bps = parse_bw_to_bps(bw_val, bw_unit)
+                raw_metrics[direction]["iops"].append(iops)
+                raw_metrics[direction]["bw_bps"].append(bw_bps)
+
+            # Parse Latency (avg only)
+            lat_match = RE_LAT_AVG.search(chunk)
+            if lat_match:
+                lat_unit = lat_match.group(1)
+                lat_avg = float(lat_match.group(2))
+                lat_avg_us = lat_to_us(lat_avg, lat_unit)
+                raw_metrics[direction]["lat_us"].append(lat_avg_us)
+
+    # ── Aggregate and Build result rows ──
     results = []
+    test_type = metadata.get("test_type", "unknown").lower()
+    
+    def get_avg(lst):
+        return sum(lst) / len(lst) if lst else 0
 
-    # ── Parse IOPS & Bandwidth ──
-    directions_found = {}
-    for match in RE_IOPS_BW.finditer(content):
-        direction = match.group(1).lower()
-        iops = parse_iops_value(match.group(2))
-        bw_val = float(match.group(3))
-        bw_unit = match.group(4)
-        bw_kbs = parse_bw_to_kbs(bw_val, bw_unit)
-        directions_found[direction] = {"iops": iops, "bw_kbs": bw_kbs}
+    read_iops = sum(raw_metrics["read"]["iops"])
+    write_iops = sum(raw_metrics["write"]["iops"])
+    read_bw = sum(raw_metrics["read"]["bw_bps"])
+    write_bw = sum(raw_metrics["write"]["bw_bps"])
+    
+    read_lat = get_avg(raw_metrics["read"]["lat_us"])
+    write_lat = get_avg(raw_metrics["write"]["lat_us"])
 
-    # ── Parse Latency mean ──
-    # FIO outputs separate lat lines for read and write; we pick the last one
-    # for each direction, or a single one if only one direction exists.
-    lat_unit = "usec"
-    lat_mean = 0.0
-    for match in RE_LAT_MEAN.finditer(content):
-        lat_unit = match.group(1)
-        lat_mean = float(match.group(4))
+    base_row = {
+        "timestamp": timestamp,
+        "disk": metadata.get("disk", "unknown"),
+        "test_type": test_type,
+        "block_size": metadata.get("block_size", "unknown"),
+        "numjobs": metadata.get("numjobs", "0"),
+        "iodepth": metadata.get("iodepth", "0"),
+        "mode": metadata.get("mode", "unknown"),
+    }
 
-    lat_mean_us = lat_to_us(lat_mean, lat_unit)
-
-    # ── Parse Percentiles ──
-    percentiles = {}
-    for match in RE_PERCENTILE.finditer(content):
-        pct = float(match.group(1))
-        val = float(match.group(2))
-        percentiles[pct] = val
-
-    # Map to our target percentiles (FIO reports in the unit shown in the lat line)
-    lat_p50 = lat_to_us(percentiles.get(50.0, 0), lat_unit)
-    lat_p95 = lat_to_us(percentiles.get(95.0, 0), lat_unit)
-    lat_p99 = lat_to_us(percentiles.get(99.0, 0), lat_unit)
-    lat_p999 = lat_to_us(percentiles.get(99.9, 0), lat_unit)
-
-    # ── Build result rows ──
-    if not directions_found:
-        # No parseable data — still record the file
-        results.append({
-            "timestamp": timestamp,
-            "disk": metadata.get("disk", "unknown"),
-            "test_type": metadata.get("test_type", "unknown"),
-            "block_size": metadata.get("block_size", "unknown"),
-            "numjobs": metadata.get("numjobs", "0"),
-            "iodepth": metadata.get("iodepth", "0"),
-            "mode": metadata.get("mode", "unknown"),
-            "direction": "unknown",
-            "iops": 0,
-            "bw_kbs": 0,
-            "lat_mean_us": lat_mean_us,
-            "lat_p50_us": lat_p50,
-            "lat_p95_us": lat_p95,
-            "lat_p99_us": lat_p99,
-            "lat_p999_us": lat_p999,
+    if test_type == "randrw":
+        # For randrw, sum read/write BW and IOPS, average the latencies
+        combined_iops = read_iops + write_iops
+        combined_bw = read_bw + write_bw
+        # Average of read and write latencies
+        if read_lat and write_lat:
+            combined_lat = (read_lat + write_lat) / 2
+        else:
+            combined_lat = read_lat or write_lat
+            
+        row = base_row.copy()
+        row.update({
+            "direction": "mixed",
+            "iops_k": combined_iops / 1000.0,
+            "bw_mps": combined_bw / 1_000_000.0,
+            "lat_avg_us": combined_lat,
         })
+        results.append(row)
     else:
-        for direction, metrics in directions_found.items():
-            results.append({
-                "timestamp": timestamp,
-                "disk": metadata.get("disk", "unknown"),
-                "test_type": metadata.get("test_type", "unknown"),
-                "block_size": metadata.get("block_size", "unknown"),
-                "numjobs": metadata.get("numjobs", "0"),
-                "iodepth": metadata.get("iodepth", "0"),
-                "mode": metadata.get("mode", "unknown"),
-                "direction": direction,
-                "iops": metrics["iops"],
-                "bw_kbs": metrics["bw_kbs"],
-                "lat_mean_us": lat_mean_us,
-                "lat_p50_us": lat_p50,
-                "lat_p95_us": lat_p95,
-                "lat_p99_us": lat_p99,
-                "lat_p999_us": lat_p999,
+        # Standard test: record separate rows if both exist, though usually only one does
+        if read_iops or read_bw or read_lat:
+            row = base_row.copy()
+            row.update({
+                "direction": "read",
+                "iops_k": read_iops / 1000.0,
+                "bw_mps": read_bw / 1_000_000.0,
+                "lat_avg_us": read_lat,
             })
+            results.append(row)
+        
+        if write_iops or write_bw or write_lat:
+            row = base_row.copy()
+            row.update({
+                "direction": "write",
+                "iops_k": write_iops / 1000.0,
+                "bw_mps": write_bw / 1_000_000.0,
+                "lat_avg_us": write_lat,
+            })
+            results.append(row)
 
     return results
 

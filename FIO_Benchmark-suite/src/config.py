@@ -43,13 +43,9 @@ RESULT_CSV_COLUMNS = [
     "iodepth",
     "mode",
     "direction",
-    "iops",
-    "bw_kbs",
-    "lat_mean_us",
-    "lat_p50_us",
-    "lat_p95_us",
-    "lat_p99_us",
-    "lat_p999_us",
+    "iops_k",
+    "bw_mps",
+    "lat_avg_us",
 ]
 
 # --- Telemetry CSV Schema ---
