@@ -1,0 +1,357 @@
+sda_seqwrite_128k: (g=0): rw=write, bs=(R) 128KiB-128KiB, (W) 128KiB-128KiB, (T) 128KiB-128KiB, ioengine=libaio, iodepth=8
+...
+sdb_seqwrite_128k: (g=1): rw=write, bs=(R) 128KiB-128KiB, (W) 128KiB-128KiB, (T) 128KiB-128KiB, ioengine=libaio, iodepth=8
+...
+sdc_seqwrite_128k: (g=2): rw=write, bs=(R) 128KiB-128KiB, (W) 128KiB-128KiB, (T) 128KiB-128KiB, ioengine=libaio, iodepth=8
+...
+sdd_seqwrite_128k: (g=3): rw=write, bs=(R) 128KiB-128KiB, (W) 128KiB-128KiB, (T) 128KiB-128KiB, ioengine=libaio, iodepth=8
+...
+sde_seqwrite_128k: (g=4): rw=write, bs=(R) 128KiB-128KiB, (W) 128KiB-128KiB, (T) 128KiB-128KiB, ioengine=libaio, iodepth=8
+...
+sdf_seqwrite_128k: (g=5): rw=write, bs=(R) 128KiB-128KiB, (W) 128KiB-128KiB, (T) 128KiB-128KiB, ioengine=libaio, iodepth=8
+...
+sdg_seqwrite_128k: (g=6): rw=write, bs=(R) 128KiB-128KiB, (W) 128KiB-128KiB, (T) 128KiB-128KiB, ioengine=libaio, iodepth=8
+...
+sdh_seqwrite_128k: (g=7): rw=write, bs=(R) 128KiB-128KiB, (W) 128KiB-128KiB, (T) 128KiB-128KiB, ioengine=libaio, iodepth=8
+...
+sdi_seqwrite_128k: (g=8): rw=write, bs=(R) 128KiB-128KiB, (W) 128KiB-128KiB, (T) 128KiB-128KiB, ioengine=libaio, iodepth=8
+...
+sdj_seqwrite_128k: (g=9): rw=write, bs=(R) 128KiB-128KiB, (W) 128KiB-128KiB, (T) 128KiB-128KiB, ioengine=libaio, iodepth=8
+...
+sdk_seqwrite_128k: (g=10): rw=write, bs=(R) 128KiB-128KiB, (W) 128KiB-128KiB, (T) 128KiB-128KiB, ioengine=libaio, iodepth=8
+...
+sdl_seqwrite_128k: (g=11): rw=write, bs=(R) 128KiB-128KiB, (W) 128KiB-128KiB, (T) 128KiB-128KiB, ioengine=libaio, iodepth=8
+...
+sdm_seqwrite_128k: (g=12): rw=write, bs=(R) 128KiB-128KiB, (W) 128KiB-128KiB, (T) 128KiB-128KiB, ioengine=libaio, iodepth=8
+...
+sdn_seqwrite_128k: (g=13): rw=write, bs=(R) 128KiB-128KiB, (W) 128KiB-128KiB, (T) 128KiB-128KiB, ioengine=libaio, iodepth=8
+...
+sdo_seqwrite_128k: (g=14): rw=write, bs=(R) 128KiB-128KiB, (W) 128KiB-128KiB, (T) 128KiB-128KiB, ioengine=libaio, iodepth=8
+...
+sdp_seqwrite_128k: (g=15): rw=write, bs=(R) 128KiB-128KiB, (W) 128KiB-128KiB, (T) 128KiB-128KiB, ioengine=libaio, iodepth=8
+...
+fio-3.19
+Starting 32 processes
+
+sda_seqwrite_128k: (groupid=0, jobs=2): err= 0: pid=62156: Thu Feb 26 18:35:43 2026
+  write: IOPS=1709, BW=214MiB/s (224MB/s)(12.5GiB/60030msec); 0 zone resets
+    slat (nsec): min=3813, max=30991, avg=14038.66, stdev=2462.49
+    clat (usec): min=4149, max=48674, avg=9343.57, stdev=3212.59
+     lat (usec): min=4164, max=48689, avg=9357.84, stdev=3212.67
+    clat percentiles (usec):
+     | 50.0th=[ 8979], 95.0th=[10159], 99.0th=[30540], 99.9th=[33817]
+   bw (  KiB/s): min=64702, max=301604, per=100.00%, avg=220796.15, stdev=19278.19, samples=118
+   iops        : min=  504, max= 2355, avg=1724.54, stdev=150.69, samples=118
+  lat (msec)   : 10=94.06%, 20=4.07%, 50=1.88%
+  cpu          : usr=0.44%, sys=1.02%, ctx=102617, majf=0, minf=116
+  IO depths    : 1=0.0%, 2=0.0%, 4=0.0%, 8=100.0%, 16=0.0%, 32=0.0%, >=64=0.0%
+     submit    : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     complete  : 0=0.0%, 4=100.0%, 8=0.1%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     issued rwts: total=0,102603,0,0 short=0,0,0,0 dropped=0,0,0,0
+     latency   : target=0, window=0, percentile=100.00%, depth=8
+sdb_seqwrite_128k: (groupid=1, jobs=2): err= 0: pid=62159: Thu Feb 26 18:35:43 2026
+  write: IOPS=1589, BW=199MiB/s (208MB/s)(11.6GiB/60026msec); 0 zone resets
+    slat (nsec): min=3931, max=32445, avg=14538.06, stdev=2804.91
+    clat (usec): min=4107, max=63226, avg=10050.67, stdev=5003.65
+     lat (usec): min=4123, max=63240, avg=10065.42, stdev=5003.71
+    clat percentiles (usec):
+     | 50.0th=[ 8979], 95.0th=[14484], 99.0th=[34866], 99.9th=[46400]
+   bw (  KiB/s): min=56774, max=226475, per=100.00%, avg=205155.56, stdev=25748.75, samples=118
+   iops        : min=  442, max= 1769, avg=1602.29, stdev=201.32, samples=118
+  lat (msec)   : 10=91.63%, 20=4.20%, 50=4.13%, 100=0.06%
+  cpu          : usr=0.41%, sys=0.99%, ctx=95398, majf=0, minf=117
+  IO depths    : 1=0.0%, 2=0.0%, 4=0.0%, 8=100.0%, 16=0.0%, 32=0.0%, >=64=0.0%
+     submit    : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     complete  : 0=0.0%, 4=100.0%, 8=0.1%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     issued rwts: total=0,95384,0,0 short=0,0,0,0 dropped=0,0,0,0
+     latency   : target=0, window=0, percentile=100.00%, depth=8
+sdc_seqwrite_128k: (groupid=2, jobs=2): err= 0: pid=62168: Thu Feb 26 18:35:43 2026
+  write: IOPS=1703, BW=213MiB/s (223MB/s)(12.5GiB/60023msec); 0 zone resets
+    slat (nsec): min=3896, max=29726, avg=14325.16, stdev=2816.17
+    clat (usec): min=3965, max=69898, avg=9374.38, stdev=3508.25
+     lat (usec): min=3979, max=69915, avg=9388.93, stdev=3508.23
+    clat percentiles (usec):
+     | 50.0th=[ 8979], 95.0th=[10159], 99.0th=[30802], 99.9th=[44827]
+   bw (  KiB/s): min=62784, max=301477, per=99.49%, avg=216963.58, stdev=20723.94, samples=118
+   iops        : min=  489, max= 2354, avg=1694.58, stdev=162.03, samples=118
+  lat (msec)   : 4=0.01%, 10=93.95%, 20=4.06%, 50=1.94%, 100=0.05%
+  cpu          : usr=0.50%, sys=0.99%, ctx=102266, majf=0, minf=117
+  IO depths    : 1=0.0%, 2=0.0%, 4=0.0%, 8=100.0%, 16=0.0%, 32=0.0%, >=64=0.0%
+     submit    : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     complete  : 0=0.0%, 4=100.0%, 8=0.1%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     issued rwts: total=0,102252,0,0 short=0,0,0,0 dropped=0,0,0,0
+     latency   : target=0, window=0, percentile=100.00%, depth=8
+sdd_seqwrite_128k: (groupid=3, jobs=2): err= 0: pid=62171: Thu Feb 26 18:35:43 2026
+  write: IOPS=1745, BW=218MiB/s (229MB/s)(12.8GiB/60031msec); 0 zone resets
+    slat (nsec): min=3673, max=30151, avg=12725.40, stdev=4441.60
+    clat (usec): min=4156, max=46130, avg=9149.00, stdev=2874.26
+     lat (usec): min=4170, max=46135, avg=9161.92, stdev=2874.22
+    clat percentiles (usec):
+     | 50.0th=[ 8979], 95.0th=[10028], 99.0th=[29230], 99.9th=[33162]
+   bw (  KiB/s): min=68410, max=349346, per=100.00%, avg=225579.76, stdev=18102.65, samples=118
+   iops        : min=  533, max= 2728, avg=1761.90, stdev=141.45, samples=118
+  lat (msec)   : 10=94.58%, 20=3.95%, 50=1.48%
+  cpu          : usr=0.45%, sys=0.90%, ctx=104817, majf=0, minf=117
+  IO depths    : 1=0.0%, 2=0.0%, 4=0.0%, 8=100.0%, 16=0.0%, 32=0.0%, >=64=0.0%
+     submit    : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     complete  : 0=0.0%, 4=100.0%, 8=0.1%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     issued rwts: total=0,104803,0,0 short=0,0,0,0 dropped=0,0,0,0
+     latency   : target=0, window=0, percentile=100.00%, depth=8
+sde_seqwrite_128k: (groupid=4, jobs=2): err= 0: pid=62181: Thu Feb 26 18:35:43 2026
+  write: IOPS=1681, BW=210MiB/s (220MB/s)(12.3GiB/60009msec); 0 zone resets
+    slat (nsec): min=3836, max=61978, avg=12784.98, stdev=3614.41
+    clat (usec): min=3927, max=73200, avg=9498.20, stdev=3667.32
+     lat (usec): min=3944, max=73205, avg=9511.18, stdev=3667.35
+    clat percentiles (usec):
+     | 50.0th=[ 8979], 95.0th=[10421], 99.0th=[31589], 99.9th=[37487]
+   bw (  KiB/s): min=66493, max=249734, per=100.00%, avg=216117.63, stdev=18391.77, samples=118
+   iops        : min=  518, max= 1951, avg=1687.98, stdev=143.83, samples=118
+  lat (msec)   : 4=0.03%, 10=92.22%, 20=5.58%, 50=2.12%, 100=0.06%
+  cpu          : usr=0.42%, sys=0.88%, ctx=100935, majf=0, minf=116
+  IO depths    : 1=0.0%, 2=0.0%, 4=0.0%, 8=100.0%, 16=0.0%, 32=0.0%, >=64=0.0%
+     submit    : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     complete  : 0=0.0%, 4=100.0%, 8=0.1%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     issued rwts: total=0,100920,0,0 short=0,0,0,0 dropped=0,0,0,0
+     latency   : target=0, window=0, percentile=100.00%, depth=8
+sdf_seqwrite_128k: (groupid=5, jobs=2): err= 0: pid=62183: Thu Feb 26 18:35:43 2026
+  write: IOPS=1675, BW=210MiB/s (220MB/s)(12.3GiB/60029msec); 0 zone resets
+    slat (nsec): min=3842, max=28844, avg=13126.74, stdev=4126.00
+    clat (usec): min=3949, max=74394, avg=9531.44, stdev=3877.04
+     lat (usec): min=3964, max=74400, avg=9544.76, stdev=3877.06
+    clat percentiles (usec):
+     | 50.0th=[ 8979], 95.0th=[10290], 99.0th=[31589], 99.9th=[46924]
+   bw (  KiB/s): min=61506, max=259580, per=100.00%, avg=216448.44, stdev=20084.63, samples=118
+   iops        : min=  479, max= 2026, avg=1690.56, stdev=157.02, samples=118
+  lat (msec)   : 4=0.03%, 10=93.33%, 20=4.16%, 50=2.41%, 100=0.08%
+  cpu          : usr=0.41%, sys=0.93%, ctx=100611, majf=0, minf=117
+  IO depths    : 1=0.0%, 2=0.0%, 4=0.0%, 8=100.0%, 16=0.0%, 32=0.0%, >=64=0.0%
+     submit    : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     complete  : 0=0.0%, 4=100.0%, 8=0.1%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     issued rwts: total=0,100596,0,0 short=0,0,0,0 dropped=0,0,0,0
+     latency   : target=0, window=0, percentile=100.00%, depth=8
+sdg_seqwrite_128k: (groupid=6, jobs=2): err= 0: pid=62190: Thu Feb 26 18:35:43 2026
+  write: IOPS=1888, BW=236MiB/s (248MB/s)(13.8GiB/60026msec); 0 zone resets
+    slat (nsec): min=3767, max=35657, avg=12996.68, stdev=3779.11
+    clat (usec): min=3941, max=46076, avg=8457.93, stdev=1839.14
+     lat (usec): min=3956, max=46089, avg=8471.12, stdev=1839.33
+    clat percentiles (usec):
+     | 50.0th=[ 8979], 95.0th=[ 9896], 99.0th=[14222], 99.9th=[27395]
+   bw (  KiB/s): min=222897, max=463280, per=99.58%, avg=240696.47, stdev=25509.18, samples=118
+   iops        : min= 1741, max= 3619, avg=1880.05, stdev=199.25, samples=118
+  lat (msec)   : 4=0.11%, 10=95.34%, 20=4.45%, 50=0.11%
+  cpu          : usr=0.43%, sys=1.04%, ctx=113351, majf=0, minf=119
+  IO depths    : 1=0.0%, 2=0.0%, 4=0.0%, 8=100.0%, 16=0.0%, 32=0.0%, >=64=0.0%
+     submit    : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     complete  : 0=0.0%, 4=100.0%, 8=0.1%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     issued rwts: total=0,113337,0,0 short=0,0,0,0 dropped=0,0,0,0
+     latency   : target=0, window=0, percentile=100.00%, depth=8
+sdh_seqwrite_128k: (groupid=7, jobs=2): err= 0: pid=62202: Thu Feb 26 18:35:43 2026
+  write: IOPS=1862, BW=233MiB/s (244MB/s)(13.6GiB/60021msec); 0 zone resets
+    slat (nsec): min=3618, max=30149, avg=13818.62, stdev=3125.00
+    clat (usec): min=3894, max=45686, avg=8575.41, stdev=2059.22
+     lat (usec): min=3912, max=45699, avg=8589.44, stdev=2059.43
+    clat percentiles (usec):
+     | 50.0th=[ 8979], 95.0th=[10028], 99.0th=[14615], 99.9th=[30802]
+   bw (  KiB/s): min=222752, max=460850, per=100.00%, avg=240674.37, stdev=25390.96, samples=118
+   iops        : min= 1740, max= 3600, avg=1879.86, stdev=198.33, samples=118
+  lat (msec)   : 4=0.06%, 10=95.27%, 20=4.34%, 50=0.35%
+  cpu          : usr=0.47%, sys=1.11%, ctx=111785, majf=0, minf=117
+  IO depths    : 1=0.0%, 2=0.0%, 4=0.0%, 8=100.0%, 16=0.0%, 32=0.0%, >=64=0.0%
+     submit    : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     complete  : 0=0.0%, 4=100.0%, 8=0.1%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     issued rwts: total=0,111768,0,0 short=0,0,0,0 dropped=0,0,0,0
+     latency   : target=0, window=0, percentile=100.00%, depth=8
+sdi_seqwrite_128k: (groupid=8, jobs=2): err= 0: pid=62205: Thu Feb 26 18:35:43 2026
+  write: IOPS=1831, BW=229MiB/s (240MB/s)(13.4GiB/60029msec); 0 zone resets
+    slat (nsec): min=3744, max=58984, avg=12809.02, stdev=3696.71
+    clat (usec): min=3891, max=44576, avg=8718.96, stdev=2114.66
+     lat (usec): min=3907, max=44586, avg=8731.96, stdev=2114.64
+    clat percentiles (usec):
+     | 50.0th=[ 8979], 95.0th=[10028], 99.0th=[15008], 99.9th=[30540]
+   bw (  KiB/s): min=223024, max=432847, per=100.00%, avg=236734.49, stdev=16886.49, samples=118
+   iops        : min= 1742, max= 3381, avg=1848.98, stdev=131.81, samples=118
+  lat (msec)   : 4=0.02%, 10=94.87%, 20=4.57%, 50=0.55%
+  cpu          : usr=0.48%, sys=0.95%, ctx=109965, majf=0, minf=116
+  IO depths    : 1=0.0%, 2=0.0%, 4=0.0%, 8=100.0%, 16=0.0%, 32=0.0%, >=64=0.0%
+     submit    : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     complete  : 0=0.0%, 4=100.0%, 8=0.1%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     issued rwts: total=0,109952,0,0 short=0,0,0,0 dropped=0,0,0,0
+     latency   : target=0, window=0, percentile=100.00%, depth=8
+sdj_seqwrite_128k: (groupid=9, jobs=2): err= 0: pid=62221: Thu Feb 26 18:35:43 2026
+  write: IOPS=1788, BW=224MiB/s (234MB/s)(13.1GiB/60025msec); 0 zone resets
+    slat (nsec): min=3815, max=29262, avg=13228.23, stdev=3387.04
+    clat (usec): min=3982, max=36870, avg=8930.75, stdev=2415.27
+     lat (usec): min=3996, max=36884, avg=8944.17, stdev=2415.37
+    clat percentiles (usec):
+     | 50.0th=[ 8979], 95.0th=[10028], 99.0th=[16909], 99.9th=[32900]
+   bw (  KiB/s): min=74548, max=333618, per=100.00%, avg=231094.12, stdev=15682.99, samples=118
+   iops        : min=  581, max= 2605, avg=1804.92, stdev=122.43, samples=118
+  lat (msec)   : 4=0.01%, 10=94.85%, 20=4.26%, 50=0.90%
+  cpu          : usr=0.44%, sys=0.99%, ctx=107354, majf=0, minf=117
+  IO depths    : 1=0.0%, 2=0.0%, 4=0.0%, 8=100.0%, 16=0.0%, 32=0.0%, >=64=0.0%
+     submit    : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     complete  : 0=0.0%, 4=100.0%, 8=0.1%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     issued rwts: total=0,107340,0,0 short=0,0,0,0 dropped=0,0,0,0
+     latency   : target=0, window=0, percentile=100.00%, depth=8
+sdk_seqwrite_128k: (groupid=10, jobs=2): err= 0: pid=62224: Thu Feb 26 18:35:43 2026
+  write: IOPS=1707, BW=213MiB/s (224MB/s)(12.5GiB/60041msec); 0 zone resets
+    slat (nsec): min=3718, max=30468, avg=12695.51, stdev=3851.15
+    clat (usec): min=4109, max=60029, avg=9353.70, stdev=3288.92
+     lat (usec): min=4124, max=60044, avg=9366.58, stdev=3289.09
+    clat percentiles (usec):
+     | 50.0th=[ 8979], 95.0th=[10290], 99.0th=[31327], 99.9th=[36439]
+   bw (  KiB/s): min=65470, max=279911, per=100.00%, avg=220535.49, stdev=18690.08, samples=118
+   iops        : min=  510, max= 2185, avg=1722.46, stdev=146.08, samples=118
+  lat (msec)   : 10=93.29%, 20=4.89%, 50=1.81%, 100=0.02%
+  cpu          : usr=0.41%, sys=0.91%, ctx=102528, majf=0, minf=117
+  IO depths    : 1=0.0%, 2=0.0%, 4=0.0%, 8=100.0%, 16=0.0%, 32=0.0%, >=64=0.0%
+     submit    : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     complete  : 0=0.0%, 4=100.0%, 8=0.1%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     issued rwts: total=0,102514,0,0 short=0,0,0,0 dropped=0,0,0,0
+     latency   : target=0, window=0, percentile=100.00%, depth=8
+sdl_seqwrite_128k: (groupid=11, jobs=2): err= 0: pid=62234: Thu Feb 26 18:35:43 2026
+  write: IOPS=1661, BW=208MiB/s (218MB/s)(12.2GiB/60020msec); 0 zone resets
+    slat (nsec): min=3821, max=32209, avg=13489.06, stdev=3162.44
+    clat (usec): min=3984, max=64423, avg=9615.53, stdev=4584.35
+     lat (usec): min=3999, max=64438, avg=9629.24, stdev=4584.54
+    clat percentiles (usec):
+     | 50.0th=[ 8979], 95.0th=[10552], 99.0th=[34341], 99.9th=[48497]
+   bw (  KiB/s): min=57542, max=367632, per=100.00%, avg=214604.51, stdev=27004.63, samples=118
+   iops        : min=  448, max= 2871, avg=1676.14, stdev=211.06, samples=118
+  lat (msec)   : 4=0.01%, 10=92.57%, 20=4.33%, 50=3.05%, 100=0.07%
+  cpu          : usr=0.47%, sys=0.92%, ctx=99718, majf=0, minf=117
+  IO depths    : 1=0.0%, 2=0.0%, 4=0.0%, 8=100.0%, 16=0.0%, 32=0.0%, >=64=0.0%
+     submit    : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     complete  : 0=0.0%, 4=100.0%, 8=0.1%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     issued rwts: total=0,99704,0,0 short=0,0,0,0 dropped=0,0,0,0
+     latency   : target=0, window=0, percentile=100.00%, depth=8
+sdm_seqwrite_128k: (groupid=12, jobs=2): err= 0: pid=62241: Thu Feb 26 18:35:43 2026
+  write: IOPS=1710, BW=214MiB/s (224MB/s)(12.5GiB/60005msec); 0 zone resets
+    slat (nsec): min=3837, max=37001, avg=12740.83, stdev=3617.42
+    clat (usec): min=3937, max=72780, avg=9338.02, stdev=3565.31
+     lat (usec): min=3956, max=72794, avg=9350.96, stdev=3565.35
+    clat percentiles (usec):
+     | 50.0th=[ 8979], 95.0th=[10290], 99.0th=[31851], 99.9th=[39060]
+   bw (  KiB/s): min=63296, max=277738, per=99.38%, avg=217615.73, stdev=20913.56, samples=118
+   iops        : min=  493, max= 2168, avg=1699.63, stdev=163.47, samples=118
+  lat (msec)   : 4=0.03%, 10=93.44%, 20=4.57%, 50=1.94%, 100=0.03%
+  cpu          : usr=0.40%, sys=0.92%, ctx=102653, majf=0, minf=115
+  IO depths    : 1=0.0%, 2=0.0%, 4=0.0%, 8=100.0%, 16=0.0%, 32=0.0%, >=64=0.0%
+     submit    : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     complete  : 0=0.0%, 4=100.0%, 8=0.1%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     issued rwts: total=0,102639,0,0 short=0,0,0,0 dropped=0,0,0,0
+     latency   : target=0, window=0, percentile=100.00%, depth=8
+sdn_seqwrite_128k: (groupid=13, jobs=2): err= 0: pid=62246: Thu Feb 26 18:35:43 2026
+  write: IOPS=1750, BW=219MiB/s (230MB/s)(12.8GiB/60021msec); 0 zone resets
+    slat (nsec): min=3767, max=36972, avg=13515.83, stdev=3156.96
+    clat (usec): min=4169, max=47190, avg=9122.29, stdev=2814.10
+     lat (usec): min=4183, max=47195, avg=9136.02, stdev=2814.16
+    clat percentiles (usec):
+     | 50.0th=[ 8979], 95.0th=[10159], 99.0th=[29754], 99.9th=[33817]
+   bw (  KiB/s): min=65342, max=306125, per=100.00%, avg=226251.29, stdev=17463.99, samples=118
+   iops        : min=  509, max= 2390, avg=1767.08, stdev=136.43, samples=118
+  lat (msec)   : 10=94.18%, 20=4.48%, 50=1.35%
+  cpu          : usr=0.48%, sys=0.96%, ctx=105095, majf=0, minf=117
+  IO depths    : 1=0.0%, 2=0.0%, 4=0.0%, 8=100.0%, 16=0.0%, 32=0.0%, >=64=0.0%
+     submit    : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     complete  : 0=0.0%, 4=100.0%, 8=0.1%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     issued rwts: total=0,105080,0,0 short=0,0,0,0 dropped=0,0,0,0
+     latency   : target=0, window=0, percentile=100.00%, depth=8
+sdo_seqwrite_128k: (groupid=14, jobs=2): err= 0: pid=62255: Thu Feb 26 18:35:43 2026
+  write: IOPS=1627, BW=204MiB/s (213MB/s)(11.9GiB/60018msec); 0 zone resets
+    slat (nsec): min=3676, max=29181, avg=13033.09, stdev=3518.79
+    clat (usec): min=4000, max=79661, avg=9811.41, stdev=4867.49
+     lat (usec): min=4014, max=79676, avg=9824.65, stdev=4867.65
+    clat percentiles (usec):
+     | 50.0th=[ 8979], 95.0th=[12125], 99.0th=[34866], 99.9th=[51119]
+   bw (  KiB/s): min=55623, max=334896, per=100.00%, avg=210229.51, stdev=26291.54, samples=118
+   iops        : min=  433, max= 2615, avg=1641.86, stdev=205.50, samples=118
+  lat (msec)   : 10=91.13%, 20=5.29%, 50=3.49%, 100=0.11%
+  cpu          : usr=0.40%, sys=0.89%, ctx=97719, majf=0, minf=117
+  IO depths    : 1=0.0%, 2=0.0%, 4=0.0%, 8=100.0%, 16=0.0%, 32=0.0%, >=64=0.0%
+     submit    : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     complete  : 0=0.0%, 4=100.0%, 8=0.1%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     issued rwts: total=0,97709,0,0 short=0,0,0,0 dropped=0,0,0,0
+     latency   : target=0, window=0, percentile=100.00%, depth=8
+sdp_seqwrite_128k: (groupid=15, jobs=2): err= 0: pid=62266: Thu Feb 26 18:35:43 2026
+  write: IOPS=1819, BW=228MiB/s (239MB/s)(13.3GiB/60020msec); 0 zone resets
+    slat (nsec): min=5160, max=30532, avg=16401.60, stdev=3143.71
+    clat (usec): min=3925, max=50762, avg=8771.69, stdev=2242.93
+     lat (usec): min=3943, max=50778, avg=8788.32, stdev=2243.03
+    clat percentiles (usec):
+     | 50.0th=[ 8979], 95.0th=[ 9896], 99.0th=[15270], 99.9th=[31589]
+   bw (  KiB/s): min=190400, max=433614, per=100.00%, avg=235228.97, stdev=16798.94, samples=118
+   iops        : min= 1487, max= 3387, avg=1837.22, stdev=131.13, samples=118
+  lat (msec)   : 4=0.02%, 10=95.33%, 20=3.97%, 50=0.68%, 100=0.01%
+  cpu          : usr=0.51%, sys=1.26%, ctx=109246, majf=0, minf=116
+  IO depths    : 1=0.0%, 2=0.0%, 4=0.0%, 8=100.0%, 16=0.0%, 32=0.0%, >=64=0.0%
+     submit    : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     complete  : 0=0.0%, 4=100.0%, 8=0.1%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     issued rwts: total=0,109232,0,0 short=0,0,0,0 dropped=0,0,0,0
+     latency   : target=0, window=0, percentile=100.00%, depth=8
+
+Run status group 0 (all jobs):
+  WRITE: bw=214MiB/s (224MB/s), 214MiB/s-214MiB/s (224MB/s-224MB/s), io=12.5GiB (13.5GB), run=60030-60030msec
+
+Run status group 1 (all jobs):
+  WRITE: bw=199MiB/s (208MB/s), 199MiB/s-199MiB/s (208MB/s-208MB/s), io=11.6GiB (12.5GB), run=60026-60026msec
+
+Run status group 2 (all jobs):
+  WRITE: bw=213MiB/s (223MB/s), 213MiB/s-213MiB/s (223MB/s-223MB/s), io=12.5GiB (13.4GB), run=60023-60023msec
+
+Run status group 3 (all jobs):
+  WRITE: bw=218MiB/s (229MB/s), 218MiB/s-218MiB/s (229MB/s-229MB/s), io=12.8GiB (13.7GB), run=60031-60031msec
+
+Run status group 4 (all jobs):
+  WRITE: bw=210MiB/s (220MB/s), 210MiB/s-210MiB/s (220MB/s-220MB/s), io=12.3GiB (13.2GB), run=60009-60009msec
+
+Run status group 5 (all jobs):
+  WRITE: bw=210MiB/s (220MB/s), 210MiB/s-210MiB/s (220MB/s-220MB/s), io=12.3GiB (13.2GB), run=60029-60029msec
+
+Run status group 6 (all jobs):
+  WRITE: bw=236MiB/s (248MB/s), 236MiB/s-236MiB/s (248MB/s-248MB/s), io=13.8GiB (14.9GB), run=60026-60026msec
+
+Run status group 7 (all jobs):
+  WRITE: bw=233MiB/s (244MB/s), 233MiB/s-233MiB/s (244MB/s-244MB/s), io=13.6GiB (14.7GB), run=60021-60021msec
+
+Run status group 8 (all jobs):
+  WRITE: bw=229MiB/s (240MB/s), 229MiB/s-229MiB/s (240MB/s-240MB/s), io=13.4GiB (14.4GB), run=60029-60029msec
+
+Run status group 9 (all jobs):
+  WRITE: bw=224MiB/s (234MB/s), 224MiB/s-224MiB/s (234MB/s-234MB/s), io=13.1GiB (14.1GB), run=60025-60025msec
+
+Run status group 10 (all jobs):
+  WRITE: bw=213MiB/s (224MB/s), 213MiB/s-213MiB/s (224MB/s-224MB/s), io=12.5GiB (13.4GB), run=60041-60041msec
+
+Run status group 11 (all jobs):
+  WRITE: bw=208MiB/s (218MB/s), 208MiB/s-208MiB/s (218MB/s-218MB/s), io=12.2GiB (13.1GB), run=60020-60020msec
+
+Run status group 12 (all jobs):
+  WRITE: bw=214MiB/s (224MB/s), 214MiB/s-214MiB/s (224MB/s-224MB/s), io=12.5GiB (13.5GB), run=60005-60005msec
+
+Run status group 13 (all jobs):
+  WRITE: bw=219MiB/s (230MB/s), 219MiB/s-219MiB/s (230MB/s-230MB/s), io=12.8GiB (13.8GB), run=60021-60021msec
+
+Run status group 14 (all jobs):
+  WRITE: bw=204MiB/s (213MB/s), 204MiB/s-204MiB/s (213MB/s-213MB/s), io=11.9GiB (12.8GB), run=60018-60018msec
+
+Run status group 15 (all jobs):
+  WRITE: bw=228MiB/s (239MB/s), 228MiB/s-228MiB/s (239MB/s-239MB/s), io=13.3GiB (14.3GB), run=60020-60020msec
+
+Disk stats (read/write):
+  sda: ios=79/128348, merge=0/0, ticks=498/1197738, in_queue=1198236, util=99.75%
+  sdb: ios=81/125306, merge=0/0, ticks=295/1197651, in_queue=1197946, util=99.76%
+  sdc: ios=81/125757, merge=0/0, ticks=455/1197622, in_queue=1198077, util=99.79%
+  sdd: ios=81/125954, merge=0/0, ticks=405/1198012, in_queue=1198417, util=99.80%
+  sde: ios=81/126627, merge=0/0, ticks=434/1193956, in_queue=1194389, util=99.82%
+  sdf: ios=81/121803, merge=0/0, ticks=474/1198023, in_queue=1198498, util=99.82%
+  sdg: ios=81/138593, merge=0/0, ticks=359/1197644, in_queue=1198004, util=99.85%
+  sdh: ios=81/139509, merge=0/0, ticks=287/1197478, in_queue=1197765, util=99.89%
+  sdi: ios=81/140659, merge=0/0, ticks=286/1197725, in_queue=1198010, util=99.91%
+  sdj: ios=81/136137, merge=0/0, ticks=286/1197654, in_queue=1197939, util=99.94%
+  sdk: ios=81/127520, merge=0/0, ticks=426/1197457, in_queue=1197883, util=99.96%
+  sdl: ios=81/122725, merge=0/0, ticks=400/1197685, in_queue=1198086, util=99.99%
+  sdm: ios=81/128399, merge=0/0, ticks=434/1194175, in_queue=1194610, util=100.00%
+  sdn: ios=81/125371, merge=0/0, ticks=414/1197764, in_queue=1198177, util=100.00%
+  sdo: ios=81/126932, merge=0/0, ticks=368/1193729, in_queue=1194098, util=100.00%
+  sdp: ios=80/130744, merge=0/0, ticks=2821/1197378, in_queue=1200198, util=100.00%

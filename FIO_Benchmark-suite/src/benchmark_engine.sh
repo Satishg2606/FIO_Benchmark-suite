@@ -32,8 +32,8 @@ DO_PURGE=true
 DRY_RUN=false
 
 # Test parameter arrays
-NUMJOBS_ARRAY=(1 2 4 8 16 32 48)
-IODEPTH_ARRAY=(2 4 8 16 32)
+NUMJOBS_ARRAY=(2 4 8 16 32)
+IODEPTH_ARRAY=(4 8 16 32)
 
 # Preconditioning parameters
 PRECOND_NUMJOBS=32
@@ -279,7 +279,7 @@ select_tests() {
     declare -g -a SELECTED_TESTS
 
     if [[ "$test_input" == "A" ]] || [[ "$test_input" == "a" ]]; then
-        SELECTED_TESTS=("seqread" "seqwrite" "randread" "randwrite" "randrw")
+        SELECTED_TESTS=("randread" "randwrite" "randrw" )
     else
         for num in $test_input; do
             case $num in
@@ -726,8 +726,6 @@ run_tests_parallel() {
     local rw_type=""
     local rwmixread=""
     case $test in
-        seqread)  rw_type="read" ;;
-        seqwrite) rw_type="write" ;;
         randread) rw_type="randread" ;;
         randwrite) rw_type="randwrite" ;;
         randrw)   rw_type="randrw"; rwmixread="70" ;;
@@ -976,7 +974,6 @@ run_comprehensive_test_suite() {
     # ══════════════════════════════════════════════════════════════════════
     # STEP 4: Cooldown (5 minutes)
     # ══════════════════════════════════════════════════════════════════════
-    cooldown ${COOLDOWN_MINUTES}
 
     # ══════════════════════════════════════════════════════════════════════
     # STEP 5: Random Preconditioning (4k, 2 hours time-based)

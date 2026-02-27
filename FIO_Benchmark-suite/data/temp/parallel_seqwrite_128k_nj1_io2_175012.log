@@ -1,0 +1,27 @@
+sda_seqwrite_128k: (g=0): rw=write, bs=(R) 128KiB-128KiB, (W) 128KiB-128KiB, (T) 128KiB-128KiB, ioengine=libaio, iodepth=2
+fio-3.19
+Starting 1 process
+
+sda_seqwrite_128k: (groupid=0, jobs=1): err= 0: pid=28495: Thu Feb 26 17:51:27 2026
+  write: IOPS=1987, BW=248MiB/s (261MB/s)(14.6GiB/60034msec); 0 zone resets
+    slat (nsec): min=3708, max=31100, avg=10889.48, stdev=4076.78
+    clat (usec): min=279, max=79050, avg=993.60, stdev=4126.11
+     lat (usec): min=299, max=79065, avg=1004.66, stdev=4126.20
+    clat percentiles (usec):
+     | 50.0th=[  510], 95.0th=[  627], 99.0th=[37487], 99.9th=[42730]
+   bw (  KiB/s): min=34141, max=451132, per=100.00%, avg=256931.88, stdev=198310.41, samples=59
+   iops        : min=  266, max= 3524, avg=2006.76, stdev=1549.37, samples=59
+  lat (usec)   : 500=33.91%, 750=62.92%, 1000=0.02%
+  lat (msec)   : 2=0.31%, 4=1.58%, 10=0.15%, 50=1.11%, 100=0.01%
+  cpu          : usr=0.74%, sys=1.79%, ctx=119316, majf=0, minf=58
+  IO depths    : 1=0.0%, 2=100.0%, 4=0.0%, 8=0.0%, 16=0.0%, 32=0.0%, >=64=0.0%
+     submit    : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     complete  : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     issued rwts: total=0,119317,0,0 short=0,0,0,0 dropped=0,0,0,0
+     latency   : target=0, window=0, percentile=100.00%, depth=2
+
+Run status group 0 (all jobs):
+  WRITE: bw=248MiB/s (261MB/s), 248MiB/s-248MiB/s (261MB/s-261MB/s), io=14.6GiB (15.6GB), run=60034-60034msec
+
+Disk stats (read/write):
+  sda: ios=133/155388, merge=0/0, ticks=808/147800, in_queue=148609, util=100.00%

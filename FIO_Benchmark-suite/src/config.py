@@ -57,6 +57,7 @@ TELEMETRY_CSV_COLUMNS = [
     "fan_rpm",
     "ram_pct",
     "power_w",
+    "hba_temp_c",
     "net_rx_mbs",
     "net_tx_mbs",
 ]
